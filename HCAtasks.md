@@ -1,0 +1,186 @@
+## Quick Reference
+
+| What you’ll do | How you’ll do it | Where it ends up |
+|----------------|------------------|------------------|
+| **Create an AnVIL (Terra) workspace** | Click **New Workspace** in Terra, give it a name, select a project, and hit **Create** | A sandbox where you’ll store and analyze your data |
+| **Find the Loom files on the HCA Data Portal** | Search the portal, note the “Download” links or the dataset’s manifest | A list of URLs (or a ZIP/manifest) pointing to your Loom files |
+| **Import the Loom files into AnVIL** | Use Terra’s **Add data → External → Google Cloud Storage / S3** or the **Import** wizard, or the **`terrafmt` CLI** | Files appear in your workspace’s file tree, ready for analysis |
+| **Validate** | Open a Loom viewer (e.g., `loompy` or `Seurat`) in a Notebook | Confirm that cell‑by‑gene matrices load correctly |
+
+---
+
+## Step‑by‑Step Guide
+
+Below is a practical, repeatable workflow that takes you from the HCA Data Portal to a 
+fully‑loaded Loom matrix in an AnVIL workspace. All commands assume you already have an 
+AnVIL/Terra account and the Terra UI is open.
+
+> **Tip:** Use the “_Terra Console_” for quick shell access to the workspace environment, or 
+launch a **Jupyter Notebook** and use Python libraries (e.g., `loompy`, `anndata`, `scanpy`).
+
+### 1. Locate the 10x Loom Data on the HCA Data Portal
+
+1. **Open the HCA Data Portal**  
+   https://portal.humancellatlas.org/
+
+2. **Search** for the dataset (e.g., “10x Genomics PBMC 3k” or “10x Chromium v2”).  
+   - Use the **Facets** panel to filter by technology (`10x Genomics`) and file format 
+(`loom`).
+
+3. **Open the “File Details”** page for the Loom file.  
+   - You’ll see a **Download URL** (usually an HTTPS link or an S3 link).  
+   - Example URL:  
+     ```
+     https://portal.humancellatlas.org/api/file/loom/12345/...
+     ```
+
+4. **Optionally download a manifest** (JSON or TSV) that lists all files.  
+   - The manifest is handy if you want to bulk‑import multiple Looms.
+
+### 2. Create a New Workspace in Terra
+
+1. Click **New Workspace** on the left sidebar.  
+2. Provide:
+   - **Name** (e.g., `10x-loom-demo`)
+   - **Project** (pick or create a project)
+   - **Permissions** (keep default for a personal workspace)
+3. Click **Create Workspace**.
+
+### 3. Import Loom Files Into the Workspace
+
+#### Method A: UI “Add Data” → “External” (Recommended for single or a few files)
+
+1. Inside your workspace, click **Add data** → **External data** → **Add from an external 
+source**.  
+2. Choose the **data location**:
+   - If the file is on **Google Cloud Storage (GCS)**: provide the GCS URI 
+(`gs://bucket/path/file.loom`).
+   - If the file is on **Amazon S3**: choose “S3” and paste the S3 URL or provide the 
+bucket/key.
+   - If you only have an HTTPS URL: select **HTTP(s)** and paste the URL.
+3. Click **Add**.  
+   - Terra will copy the file into the workspace’s internal storage (usually 
+`gs://my-terrastore/…`).
+
+> **Note:** For large files (≥ 1 GB), the copy can take a few minutes. Terra shows progress 
+in the **File Browser**.
+
+#### Method B: “Import” Wizard (Good for a batch)
+
+1. In the workspace, click **Add data** → **Import**.  
+2. Choose **Manifest** if you have a TSV/JSON manifest.  
+   - Upload the manifest file.  
+   - Map columns: `filename`, `url`, etc.  
+3. Review the preview and click **Import**.  
+4. Terra will read the manifest and import all listed files.
+
+#### Method C: Terra CLI (`terra-tools`) – Advanced
+
+If you prefer a terminal approach or have many files:
+
+```bash
+# Install terra-tools (once)
+pip install terra-tools
+
+# Login to Terra
+terra login
+
+# Create a workspace (skip if already done)
+terra workspace create -n myworkspace -p myproject
+
+# Import a single Loom file
+terra data import-from-uri \
+  --workspace=myworkspace \
+  --uri="https://portal.humancellatlas.org/api/file/loom/12345/..." \
+  --output-file-name="sample1.loom"
+
+# Import via a manifest
+terra data import-from-manifest \
+  --workspace=myworkspace \
+  --manifest=manifest.tsv \
+  --output-dir="loom_data"
+```
+
+> **Tip:** If your URLs require authentication (e.g., HCA requires an API key), you can 
+pre‑fetch the file to a local directory and then `terra data upload` it.
+
+### 4. Verify the Import
+
+1. **Open a Notebook** (Jupyter or RStudio) in the workspace.  
+2. Run a quick Loom load:
+
+```python
+import loompy
+import scanpy as sc
+
+# Path inside the workspace
+loom_path = 'gs://my-terrastore/loom_data/sample1.loom'
+
+# Load
+adata = sc.read_loom(loom_path)
+
+# Basic sanity checks
+print(adata.shape)          # Should be (cells, genes)
+print(adata.var_names[:5])  # Gene names
+print(adata.obs_names[:5])  # Cell barcodes
+```
+
+If the matrix loads without error, your import was successful.
+
+### 5. (Optional) Link to HCA Metadata
+
+If you want to keep track of the source dataset:
+
+- **Add a README** to your workspace describing the HCA accession, date, and URL.  
+- **Tag** the file in the file browser with the HCA accession number.  
+- **Create a JSON metadata file** that mirrors the HCA metadata, and store it alongside the 
+Loom.
+
+### 6. Persist & Share
+
+- **Version control**: AnVIL automatically version‑controls workspace files; you can check 
+the **Version History** tab.  
+- **Sharing**: Grant collaborators by clicking the **Share** button on the workspace.  
+- **Publish**: When you’re ready, you can publish the workspace or export a **WDL** workflow 
+that reproduces the analysis.
+
+---
+
+## Recap Checklist
+
+| ✅ | Task |
+|---|------|
+| | Create a workspace in Terra |
+| | Locate Loom file URLs on HCA Portal |
+| | Import Loom files via UI or CLI |
+| | Verify import with a Notebook |
+| | Annotate with HCA metadata |
+| | Share/publish the workspace |
+
+---
+
+## Helpful Links
+
+| Resource | Description |
+|----------|-------------|
+| **AnVIL Documentation** | https://anvilproject.org/resources |
+| **Terra UI** | https://app.terra.bio |
+| **Terra CLI** | https://github.com/DataBiosphere/terra-tools |
+| **HCA Data Portal** | https://portal.humancellatlas.org |
+| **Loom File Spec** | https://loompy.org/ |
+
+---
+
+### Troubleshooting
+
+| Symptom | Likely Cause | Fix |
+|---------|--------------|-----|
+| Import fails with “404 Not Found” | Wrong URL or missing authentication | Verify the URL, check if you need an API key |
+| File too large, copy stalls | Network bottleneck or GCS quota | Increase timeout, use `terra data upload` with chunking |
+| Loom fails to load in Notebook | Corrupted file or wrong path | Re‑import, double‑check the path (`gs://...`) |
+
+---
+
+With these steps you should be able to pull any 10x Genomics cell‑by‑gene Loom matrix from 
+the HCA Data Portal straight into AnVIL, ready for downstream analysis, visualisation, or 
+sharing with collaborators. Happy scRNA‑seq exploring!
