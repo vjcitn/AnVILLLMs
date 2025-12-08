@@ -11,19 +11,19 @@ if (length(new_pkgs)) install.packages(new_pkgs)
 lapply(packages, library, character.only = TRUE)
 
 ## 2. Read the built‑in dataset -------------------------------------------
-data("globalPatterns")          # OTU table + sample metadata
+data("GlobalPatterns")          # OTU table + sample metadata
 
 # Inspect the data
-print(head(otu_table(globalPatterns)))
-print(sample_data(globalPatterns))
+print(head(otu_table(GlobalPatterns)))
+print(sample_data(GlobalPatterns))
 
 ## 3. Pre‑process ---------------------------------------------------------
 #  (a) Convert OTU counts → relative abundance
 #  Note: OTU tables are usually raw counts; here they are already
-#  log‑transformed in the globalPatterns data, but we’ll convert to
+#  log‑transformed in the GlobalPatterns data, but we’ll convert to
 #  relative abundance anyway for clarity.
 #  OTU table: OTUs × Samples
-otu_mat <- as.matrix(otu_table(globalPatterns))
+otu_mat <- as.matrix(otu_table(GlobalPatterns))
 #  If values are counts (they are counts), convert to relative:
 rel_abund <- sweep(otu_mat, 2, colSums(otu_mat), FUN = "/")
 
@@ -40,17 +40,20 @@ df_long <- as.data.frame(t(rel_abund_filtered)) %>%   # Samples × Taxa
                names_to = "Taxon",
                values_to = "Abundance")
 
-#  Merge with sample metadata (metadata has column "SampleID" in globalPatterns)
-metadata <- as(sample_data(globalPatterns), "data.frame") %>%
+#  Merge with sample metadata (metadata has column "SampleID" in GlobalPatterns)
+metadata <- as(sample_data(GlobalPatterns), "data.frame") %>%
   tibble() %>%
-  mutate(Sample = SampleID)
+  mutate(Sample = X.SampleID)   # why?
 
 df_long <- left_join(df_long, metadata, by = "Sample")
 
 #  For this demo we create a binary outcome:
-#  “Host” column in globalPatterns indicates the host species
+#  “Host” column in GlobalPatterns indicates the host species
 #  (e.g., human, rat, mouse, etc.).  We'll predict *Human* vs. *Non‑human*.
-df_long$HostBinary <- ifelse(df_long$Host == "Human", 1, 0)
+#df_long$HostBinary <- ifelse(df_long$Host == "Human", 1, 0)
+#  regexpr("^[M|F].*", colnames(otu_table(GlobalPatterns))>0
+df_long$HostBinary = factor(ifelse(regexpr("^[M|F].*", df_long$Sample)>0, "Human", "nothuman"))
+df_long$Host = ifelse(regexpr("^[M|F].*", df_long$Sample)>0, "Human", "nothuman")
 
 #  Keep only the samples that we used above
 samples_used <- unique(df_long$Sample)
@@ -59,13 +62,13 @@ df_long <- df_long %>% filter(Sample %in% samples_used)
 ## 4. Build the feature matrix --------------------------------------------
 #  Pivot back to wide format: Samples × Taxa
 df_wide <- df_long %>%
-  select(Sample, Taxon, Abundance) %>%
+  select(Sample, Taxon, Abundance, Host, HostBinary) %>%
   pivot_wider(names_from = Taxon,
               values_from = Abundance,
               values_fill = list(Abundance = 0))
 
 #  Response vector
-y <- df_wide %>% mutate(HostBinary = ifelse(Host == "Human", 1, 0)) %>%
+y <- df_wide %>% #mutate(HostBinary = ifelse(Host == "Human", 1, 0)) %>%
   arrange(match(Sample, samples_used)) %>%
   pull(HostBinary)
 
@@ -100,10 +103,10 @@ rf_fit <- train(x = X_train,
 print(rf_fit)
 
 ## 6. Evaluation ----------------------------------------------------------
-pred_prob  <- predict(rf_fit, X_test, type = "prob")[, "1"]
+pred_prob  <- predict(rf_fit, X_test, type = "prob")[, "Human"]
 pred_class <- predict(rf_fit, X_test)
 
-conf_mat <- confusionMatrix(pred_class, y_test, positive = "1")
+conf_mat <- confusionMatrix(pred_class, y_test, positive = "Human")
 print(conf_mat)
 
 # ROC and AUC
