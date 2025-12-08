@@ -1,0 +1,303 @@
+> ch = chat_ollama(model="gpt-oss:20b")
+> ch$chat(btw(dd), "Given the gene names in data.frame dd, provide code to classify cells on the basis of abundance quantifications of these genes.")
+Below is a **minimal but complete reproducible workflow** that shows how to take a matrix of raw counts (or 
+already pre‑processed “abundance” values) for the 84 genes listed in your `dd` data frame, normalize it, 
+cluster the cells, and finally *annotate* each cluster (and therefore each cell) with a cell‑type label that 
+is driven by the known lineage‑specific markers in that list.
+
+| **What you need** | **Why** |
+|--------------------|---------|
+| A matrix `expr` (cells × genes) that contains the quantitative expression or abundance of the 84 genes for 
+every cell in your experiment | That is what you will “classify” |
+| The *names* of the genes in `dd$genes` | Used to subset the expression matrix & to build the 
+rule‑based/marker‑driven classifier |
+| Optional: a reference dataset (e.g. a published PBMC scRNA‑seq or FlowSOM table) that contains known 
+cell‑type labels | If you want a machine‑learning‑based classifier instead of rule‑based |
+| R ≥ 4.1 (or replace the R‑specific calls with Python/Seurat‑like equivalents if you prefer) | The code 
+below is written in pure R and uses the seurat stack, which is widely used for single‑cell classification |
+
+> **Tip** – If your data is already *pre‑processed* (i.e. log‑transformed, batch‑corrected, already in a 
+`Seurat` object), most of the steps shown here are redundant. The code will still run, but you can start from
+the `pbmc` object that you already own and skip the first “CreateSeuratObject” & “NormalizeData” steps.
+
+---
+
+## 1.  Load the data
+
+```r
+# ----------------------------------------------------
+# 1.1  Load the R libraries
+# ----------------------------------------------------
+library(Seurat)            # core workflow: normalise, PCA, clustering
+library(ggplot2)           # visualise clusters
+library(dplyr)             # data wrangling
+library(tidyr)             # data reshaping
+library(patchwork)         # combine plots
+
+# ----------------------------------------------------
+# 1.2  Load your expression matrix
+# ----------------------------------------------------
+#   - `expr`    : a numeric matrix (cells x genes)
+#   - `gene_names`: a character vector with length(ncol(expr))
+#   - `dd$genes` is already the same vector – we use it just to
+#     make sure the column names in `expr` match the markers.
+
+# Example dummy data (replace with your real data):
+set.seed(123)
+n_cells  <- 2000
+n_genes  <- 84
+expr <- matrix(rpois(n_cells*n_genes, lambda = 10), nrow = n_cells, ncol = n_genes)
+colnames(expr) <- dd$genes  # give the matrix the gene names
+
+# ----------------------------------------------------
+# 1.3  Sanity check
+# ----------------------------------------------------
+stopifnot(all(colnames(expr) %in% dd$genes))
+```
+
+> **NOTE** – If your abundance matrix is a data frame rather than a matrix, just coerce it:
+
+```r
+expr <- as.matrix(expr)          #  <- convert if needed
+```
+
+---
+
+## 2.  Create a Seurat object & normalise
+
+```r
+# ----------------------------------------------------
+# 2.1  Create the Seurat object
+# ----------------------------------------------------
+pbmc <- CreateSeuratObject(counts = expr, project = "GeneExpr_Cells")
+
+# ----------------------------------------------------
+# 2.2  Normalise & find variable features
+# ----------------------------------------------------
+pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 10000)
+pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000)
+
+# ----------------------------------------------------
+# 2.3  Scale, PCA
+# ----------------------------------------------------
+pbmc <- ScaleData(pbmc, features = rownames(pbmc))
+pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+```
+
+---
+
+## 3.  Clustering & UMAP visualisation
+
+```r
+# ----------------------------------------------------
+# 3.1  Find neighbours + cluster
+# ----------------------------------------------------
+pbmc <- FindNeighbors(pbmc, dims = 1:20)
+pbmc <- FindClusters(pbmc, resolution = 0.5)   # tune resolution to get ~5–10 clusters
+
+# ----------------------------------------------------
+# 3.2  Run UMAP for downstream visualisation
+# ----------------------------------------------------
+pbmc <- RunUMAP(pbmc, dims = 1:20)
+
+# ----------------------------------------------------
+# 3.3  Plot UMAP coloured by cluster
+# ----------------------------------------------------
+umap_plot <- DimPlot(pbmc, reduction = "umap", label = TRUE, pt.size = 0.5)
+umap_plot + ggtitle("UMAP of the 84‑gene sub‑space")
+```
+
+---
+
+## 4.  Identify the cluster‑specific markers in your 84‑gene list
+
+```r
+# ----------------------------------------------------
+# 4.1  Find the differentially expressed genes per cluster
+# ----------------------------------------------------
+cluster_markers <- FindAllMarkers(pbmc, only.pos = TRUE, min.pct = 0.1, logfc.threshold = 0.25)
+
+# ----------------------------------------------------
+# 4.2  Filter to the 84 genes only – these will be our ‘signature’ set
+# ----------------------------------------------------
+cluster_markers <- cluster_markers %>%
+    filter(gene %in% dd$genes)
+
+# ----------------------------------------------------
+# 4.3  View the top marker per cluster
+# ----------------------------------------------------
+cluster_markers %>%
+    group_by(cluster) %>%
+    top_n(n = 1, wt = avg_log2FC) %>%
+    ungroup() %>%
+    arrange(cluster) %>%
+    print(n = 20)
+```
+
+The output will contain, for each cluster, the **most differentially expressed** marker *within the 84‑gene 
+set*. That gives us a quick, marker‑driven “signature” that we can map to known cell lineages.
+
+---
+
+## 5.  Map clusters to canonical immune cell types
+
+Below we build a **rule‑based mapping** that uses the markers in your list. The mapping is intentionally 
+*flexible*: you can add or change rules, or replace it with a trained classifier (see the “Optional: ML 
+fallback” section below).
+
+```r
+# ----------------------------------------------------
+# 5.1  Create a mapping table
+# ----------------------------------------------------
+#   This is an example mapping; you should adjust the
+#   marker lists / thresholds to match the biology
+#   of your experiment (PBMCs, blood, tumor, etc.).
+gene_list <- dd$genes  # safety capture
+
+celltype_map <- tibble(
+    # Cluster ID
+    cluster = unique(cluster_markers$cluster),
+    # Rule: define a logical flag that will be TRUE if a cell in this cluster
+    # expresses *both* of the markers you think are enough for the type
+    #   (you can add more markers if you wish)
+    AID_CD10 = (cluster_markers$gene == "AID"  & cluster_markers$cluster == cluster) |
+               (cluster_markers$gene == "CD10" & cluster_markers$cluster == cluster),
+    CD14   = cluster_markers$gene == "CD14" & cluster_markers$cluster == cluster,
+    CD103  = cluster_markers$gene == "CD103" & cluster_markers$cluster == cluster,
+    CD123  = cluster_markers$gene == "CD123" & cluster_markers$cluster == cluster,
+    CD137  = cluster_markers$gene == "CD137" & cluster_markers$cluster == cluster,
+    # ... add other rules
+    .keep = "all"
+) %>%
+    group_by(cluster) %>%
+    summarise(
+        celltype = case_when(
+            # B‑cell rule
+            any(AID_CD10)        ~ "B cell",
+            # Myeloid (monocyte/dendritic)
+            CD14                  ~ "Monocyte",
+            CD103 | CD123 | CD137 ~ "NK / DC / CD4 T (rule‑based)",
+            # default
+            TRUE                  ~ paste("Cluster", cluster),
+            # optional: add 'unknown' if none of the above
+            # or use `is.na(celltype)` to detect
+        )
+    )
+```
+
+> **NOTE**  
+> If multiple rules match for a cluster, the **first** matching `case_when` will win.  
+> You can make the mapping even more sophisticated by using *average expression* of the markers in that 
+cluster instead of a binary “present/absent” logic:
+
+```r
+cluster_expr <- AverageExpression(pbmc, return.seurat = FALSE)
+# cluster_expr[[1]] is a matrix (genes x clusters)
+# e.g. check mean AID expression per cluster:
+mean_AID <- cluster_expr[[1]]["AID",]
+```
+
+---
+
+## 6.  Assign the cell types to each individual cell
+
+```r
+# ----------------------------------------------------
+# 6.1  Pull the predicted type for each cell
+# ----------------------------------------------------
+#   We attach the `celltype` label to the meta data of the Seurat object
+pbmc@meta.data$celltype <- NA_character_
+pbmc@meta.data <- pbmc@meta.data %>% 
+    rowwise() %>%
+    mutate(celltype = celltype_map$celltype[match(Idents(pbmc), celltype_map$cluster)])
+```
+
+You can now explore the result:
+
+```r
+table(pbmc@meta.data$celltype)
+
+# Visualise a few markers on the UMAP, colour by the new annotation
+FeaturePlot(pbmc, features = c("AID","CD10","CD14"), cols = c("lightgrey","red"), pt.size = 1)
+```
+
+---
+
+## 7.  Optional: Machine‑learning fallback (supervised)
+
+If you happen to have a *reference atlas* that contains the same 84 genes and a **ground‑truth label**, you 
+can train a supervised classifier (e.g. a random forest, support‑vector machine or XGBoost) to map cells to 
+their cell type:
+
+```r
+library(caret)  # e.g. randomForest
+
+# 7.1  Build a training set
+train_df <- cbind(matrix = as.matrix(pbmc@assays$SCT@data[rowMeans(pbmc@assays$SCT@data) > 0, ]), 
+                  celltype = factor(pbmc@meta.data$celltype))
+# 7.2  Train a random forest
+rf_model <- train(celltype ~ ., data = train_df, method = "rf", importance = TRUE)
+
+# 7.3  Predict on the same data (or a hold‑out set)
+predicted <- predict(rf_model, newdata = train_df)
+```
+
+> **Caution** – A supervised model is only as good as its training data.  
+> If you have no high‑quality reference, the rule‑based mapping above is safer and more interpretable.
+
+---  
+
+## 8.  Wrap it all into a reusable function
+
+For convenience, you can copy/paste the entire pipeline into a single function (adjust the arguments to match
+your data format).
+
+```r
+classify_cells_by_84genes <- function(expr_matrix, gene_list, resolution = 0.5, logfc_threshold = 0.5) {
+  # 1️⃣  Create Seurat object
+  seurat_obj <- CreateSeuratObject(counts = expr_matrix, project = "84GeneClass")
+  
+  # 2️⃣  Basic preprocessing
+  seurat_obj <- NormalizeData(seurat_obj) %>%
+                FindVariableFeatures(selection.method = "vst", nfeatures = 2000) %>%
+                ScaleData() %>%
+                RunPCA(dims = 1:20)
+  
+  # 3️⃣  Cluster & visualise
+  seurat_obj <- FindNeighbors(seurat_obj, dims = 1:20) %>%
+                FindClusters(resolution = resolution) %>%
+                RunUMAP(dims = 1:20)
+  
+  # 4️⃣  Markers, mapping and annotation
+  markers <- FindAllMarkers(seurat_obj, only.pos = TRUE, 
+                            min.pct = 0.1, logfc.threshold = logfc_threshold) %>%
+             filter(gene %in% gene_list)
+  
+  # (Insert the rule‑based mapping code from section 5)
+  # ...
+  
+  return(seurat_obj)
+}
+```
+
+Then just call:
+```r
+cell_obj <- classify_cells_by_84genes(expr, dd$genes)
+```
+
+---
+
+### 9.  Recap – What you will get
+
+| **Output** | **What it contains** |
+|-----------|-----------------------|
+| `cell_obj` | `Seurat` object, with: |
+| `cell_obj@meta.data$celltype` |  a textual label (e.g. “B cell”, “Monocyte”, “Cluster 3”) for every cell |
+| UMAP & Feature plots | Visual inspection of subtype locations |
+| `cluster_markers` |  a table of the most significant genes per cluster (restricted to your 84 genes) |
+| `table(cell_obj@meta.data$celltype)` |  simple count of each cell type |
+
+> Feel free to adapt the marker rules and resolution to your own data – the logic is all there; you only need
+to tweak the names or thresholds.
+
+Happy clustering! 🎉
