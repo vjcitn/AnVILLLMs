@@ -33,21 +33,13 @@ Reusable.
 
 | Layer | Technology | Why It Matters |
 |-------|------------|----------------|
-| **Data Layer** | Google Cloud Storage, BigQuery, Cloud Spanner | Massive, highly available 
-storage and fast analytics on petabyte‑scale datasets. |
-| **Compute Layer** | Kubernetes (Anthos), Cloud VMs, Docker | Flexible, scalable compute 
-that can run notebooks, pipelines, or high‑throughput jobs. |
-| **Security & Governance** | IAM, Google Cloud KMS, dbGaP‑controlled access, AnVIL Consent & 
-Data‑Use Management (CDUM) | Ensures that sensitive PHI/PII remains protected and that only 
-authorized users can read/write data. |
-| **Data Discovery & Integration** | AnVIL Data Catalog, Data Commons API, dbGaP metadata, 
-GDC API | One-click search across all NIH datasets. |
-| **Analysis & Visualization** | JupyterLab, RStudio, Galaxy, Nextflow, Snakemake, Dockstore, 
-R/Bioconductor packages | “One‑stop shop” for downstream bioinformatics. |
-| **Collaboration & Sharing** | Git, GitHub, Docker Hub, Notebooks, R Markdown, Shiny, 
-Interactive Dashboards | Enables sharing of code, reproducible workflows, and results. |
-| **Cost Management** | Cloud Billing, Budgets, Usage Reports | Keeps research budgets 
-transparent and predictable. |
+| **Data Layer** | Google Cloud Storage, BigQuery, Cloud Spanner | Massive, highly available  storage and fast analytics on petabyte‑scale datasets. |
+| **Compute Layer** | Kubernetes (Anthos), Cloud VMs, Docker | Flexible, scalable compute  that can run notebooks, pipelines, or high‑throughput jobs. |
+| **Security & Governance** | IAM, Google Cloud KMS, dbGaP‑controlled access, AnVIL Consent &  Data‑Use Management (CDUM) | Ensures that sensitive PHI/PII remains protected and that only  authorized users can read/write data. |
+| **Data Discovery & Integration** | AnVIL Data Catalog, Data Commons API, dbGaP metadata, GDC API | One-click search across all NIH datasets. |
+| **Analysis & Visualization** | JupyterLab, RStudio, Galaxy, Nextflow, Snakemake, Dockstore, R/Bioconductor packages | “One‑stop shop” for downstream bioinformatics. |
+| **Collaboration & Sharing** | Git, GitHub, Docker Hub, Notebooks, R Markdown, Shiny,  Interactive Dashboards | Enables sharing of code, reproducible workflows, and results. |
+| **Cost Management** | Cloud Billing, Budgets, Usage Reports | Keeps research budgets  transparent and predictable. |
 
 ---
 
@@ -55,19 +47,13 @@ transparent and predictable. |
 
 | Resource | What It Contains | Typical Users |
 |----------|------------------|---------------|
-| **dbGaP** | Human genomic & phenotypic data with controlled access | Clinical researchers, 
-epidemiologists |
-| **Genomic Data Commons (GDC)** | TCGA, TARGET, and other cancer genomics | Oncologists, 
-cancer genomics teams |
-| **NIH Genomics Data Commons (GDC‑style)** | Broad array of phenotypic & omics datasets | 
-Multi‑omics investigators |
-| **Other consortia (e.g., 1000 Genomes, TOPMed)** | Reference panels, population genetics | 
-Population genetics, ancestry research |
-| **AnVIL Data Catalog** | Aggregated metadata, dataset descriptions | Data discovery across 
-all resources |
+| **dbGaP** | Human genomic & phenotypic data with controlled access | Clinical researchers,  epidemiologists |
+| **Genomic Data Commons (GDC)** | TCGA, TARGET, and other cancer genomics | Oncologists,  cancer genomics teams |
+| **NIH Genomics Data Commons (GDC‑style)** | Broad array of phenotypic & omics datasets |  Multi‑omics investigators |
+| **Other consortia (e.g., 1000 Genomes, TOPMed)** | Reference panels, population genetics |  Population genetics, ancestry research |
+| **AnVIL Data Catalog** | Aggregated metadata, dataset descriptions | Data discovery across  all resources |
 
-> **Note**: Many of these datasets are “controlled access”; you must obtain dbGaP credentials 
-or submit an application. AnVIL simplifies this by providing a single portal for all 
+> **Note**: Many of these datasets are “controlled access”; you must obtain dbGaP credentials or submit an application. AnVIL simplifies this by providing a single portal for all 
 consents.
 
 ---
@@ -76,20 +62,13 @@ consents.
 
 | Tool | Key Features | Example Use Cases |
 |------|--------------|-------------------|
-| **JupyterLab** | Python/R notebooks, interactive visualizations | Exploratory data 
-analysis, machine learning prototypes |
-| **RStudio Cloud** | R + Bioconductor, Shiny apps | Statistical genomics, pipeline debugging 
-|
-| **Galaxy** | GUI for bioinformatics pipelines (e.g., variant calling, RNA‑seq) | Standard 
-workflows without scripting |
-| **Nextflow / Snakemake** | Workflow execution on Kubernetes, reproducible pipelines | 
-Large‑scale, multi‑step pipelines |
-| **Dockstore** | Containerized workflows, CWL/Snakemake/Nextflow specs | Sharing and 
-versioning of analytic methods |
-| **Google BigQuery** | SQL‑style queries on genomic tables | Population‑level association 
-studies |
-| **Shiny / Dashboards** | Interactive reporting | Data portal dashboards, patient outcome 
-visualizations |
+| **JupyterLab** | Python/R notebooks, interactive visualizations | Exploratory data  analysis, machine learning prototypes |
+| **RStudio Cloud** | R + Bioconductor, Shiny apps | Statistical genomics, pipeline debugging  |
+| **Galaxy** | GUI for bioinformatics pipelines (e.g., variant calling, RNA‑seq) | Standard  workflows without scripting |
+| **Nextflow / Snakemake** | Workflow execution on Kubernetes, reproducible pipelines |  Large‑scale, multi‑step pipelines |
+| **Dockstore** | Containerized workflows, CWL/Snakemake/Nextflow specs | Sharing and versioning of analytic methods |
+| **Google BigQuery** | SQL‑style queries on genomic tables | Population‑level association  studies |
+| **Shiny / Dashboards** | Interactive reporting | Data portal dashboards, patient outcome  visualizations |
 
 All of these run in the **same cloud environment** as the data, eliminating data transfer 
 bottlenecks and reducing I/O costs.
@@ -111,18 +90,12 @@ interface, users can request access to controlled datasets.
 
 | Step | Action | Where |
 |------|--------|-------|
-| 1. **Create an AnVIL account** | Fill out the sign‑up form; link to an existing NIH or 
-Google Cloud account | https://anvil.terra.bio/ |
-| 2. **Explore datasets** | Use the Data Catalog; filter by study, phenotype, data type | 
-AnVIL portal |
-| 3. **Set up a workspace** | Create a new project; attach storage buckets; configure IAM | 
-Workspace UI |
-| 4. **Launch an analysis tool** | Start a Jupyter, RStudio, or Galaxy session | Workspace > 
-“New” > “Analysis” |
-| 5. **Run or upload a workflow** | Drag and drop from Dockstore, or write your own Nextflow 
-pipeline | Workspace > “Add Data / Workflows” |
-| 6. **Publish results** | Share notebooks, Docker images, or Shiny apps; export to GitHub | 
-Workspace > “Share” |
+| 1. **Create an AnVIL account** | Fill out the sign‑up form; link to an existing NIH or  Google Cloud account | https://anvil.terra.bio/ |
+| 2. **Explore datasets** | Use the Data Catalog; filter by study, phenotype, data type |  AnVIL portal |
+| 3. **Set up a workspace** | Create a new project; attach storage buckets; configure IAM |  Workspace UI |
+| 4. **Launch an analysis tool** | Start a Jupyter, RStudio, or Galaxy session | Workspace >  “New” > “Analysis” |
+| 5. **Run or upload a workflow** | Drag and drop from Dockstore, or write your own Nextflow  pipeline | Workspace > “Add Data / Workflows” |
+| 6. **Publish results** | Share notebooks, Docker images, or Shiny apps; export to GitHub |  Workspace > “Share” |
 
 ---
 
@@ -130,14 +103,10 @@ Workspace > “Share” |
 
 | Project | Dataset | Tool Used | Outcome |
 |---------|---------|-----------|---------|
-| **Genome‑Wide Association Study of Type 2 Diabetes** | dbGaP (UKBB, DIAGRAM) | Jupyter + 
-BigQuery | Identified novel loci; published preprint in *Nature Genetics* |
-| **Cancer Immune Microenvironment Analysis** | GDC TCGA | Galaxy + RStudio | Created an 
-interactive Shiny dashboard for clinicians |
-| **Multi‑omics Drug Response Prediction** | TOPMed + GEO | Nextflow + Snakemake | Engineered 
-an ML model that predicts drug response; code deposited in Dockstore |
-| **Open‑Source Variant Caller Benchmark** | 1000 Genomes | Docker + Galaxy | Published 
-standardized benchmarking pipeline on Docker Hub |
+| **Genome‑Wide Association Study of Type 2 Diabetes** | dbGaP (UKBB, DIAGRAM) | Jupyter +  BigQuery | Identified novel loci; published preprint in *Nature Genetics* |
+| **Cancer Immune Microenvironment Analysis** | GDC TCGA | Galaxy + RStudio | Created an  interactive Shiny dashboard for clinicians |
+| **Multi‑omics Drug Response Prediction** | TOPMed + GEO | Nextflow + Snakemake | Engineered  an ML model that predicts drug response; code deposited in Dockstore |
+| **Open‑Source Variant Caller Benchmark** | 1000 Genomes | Docker + Galaxy | Published  standardized benchmarking pipeline on Docker Hub |
 
 ---
 
