@@ -1,0 +1,28 @@
+>>> What is the NHGRI AnVIL system?
+Thinking...
+The user asks: "What is the NHGRI AnVIL system?" They want a description. They likely want an 
+explanation of the AnVIL (Analysis, Visualization, and Informatics Lab-space). NHGRI stands 
+for National Human Genome Research Institute. So AnVIL is a cloud-based data repository and 
+analysis platform for genomics data. It hosts data from NIH and other consortia. It's built 
+on cloud infrastructure (like Google Cloud, Amazon?). Provide overview, purpose, features, 
+data types, tools, etc.
+
+We need to produce a comprehensive answer. They might want details: it's a NIH-funded system 
+for data sharing, analysis, reproducibility, etc. It includes data resources: e.g., NIH 
+Genomic Data Commons, dbGaP, etc. Tools: Jupyter notebooks, RStudio, Galaxy, Dockstore, Data 
+Commons, etc. Governance, data access. It uses "AnVIL" stands for "Analysis, Visualization, 
+and Informatics Lab-space." It's built on the "Data Commons" platform.
+
+Also mention its architecture: uses cloud computing (Google Cloud?), Kubernetes, 
+containerization, data harmonization, secure data. It supports "data sharing" via FAIR 
+principles.
+
+Maybe also mention the "AnVIL portal," "AnVIL APIs," "Data access" via dbGaP and NCBI.
+
+Explain its importance in genomics research. Provide examples of use.
+
+So answer accordingly.
+
+Will produce a detailed explanation, possibly with bullet points. Provide citations maybe. 
+Let's answer.
+...done thinking.
