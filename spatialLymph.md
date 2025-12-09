@@ -1,3 +1,18 @@
+`gn` is the vector
+```
+> dput(gn)
+c("AID", "AXL", "bcl2", "BCL6", "CD10", "CD103", "CD11c", "CD123", 
+"CD137", "CD14", "CD141", "CD16", "CD163", "CD1A", "CD1c", "CD20", 
+"CD207", "CD21", "CD23", "CD248", "CD27", "CD3", "CD303", "CD30v", 
+"CD31", "CD32abc", "CD34", "CD4", "CD4543", "CD5", "CD56", "CD64", 
+"CD68", "CD69", "CD7", "CD74", "CD79a", "CD8", "CD86", "CLEC10A", 
+"CLEC9A", "cMAF", "CXCL13a", "EOMES", "FoxP3", "GATA3", "GRB7", 
+"HLADR", "ID2", "IDO", "IgD", "IRF4", "IRF8", "KappaS", "Ki67", 
+"LAG3", "LambdaS", "LYVE1", "LYZ", "MX1", "MYC", "MYCN", "OX40", 
+"Pax5", "PD1", "PDL1", "PNAd", "Podoplanin", "PRDM1", "PU1", 
+"RORC", "S100B", "SOX9", "TCF4", "TCF7", "TCRd", "TIM3", "TOX1", 
+"vWF", "ZEB1")
+```
 ```
 > library(ellmer)
 > library(btw)
